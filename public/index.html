@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anti-Plagiat · Finary Scripts</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface-2: #1a1a26;
+            --surface-3: #22222f;
+            --border: #2a2a3a;
+            --border-focus: #6366f1;
+            --text: #e4e4ed;
+            --text-muted: #8888a0;
+            --text-dim: #55556a;
+            --accent: #6366f1;
+            --accent-soft: rgba(99, 102, 241, 0.12);
+            --green: #34d399;
+            --green-soft: rgba(52, 211, 153, 0.12);
+            --orange: #fb923c;
+            --orange-soft: rgba(251, 146, 60, 0.12);
+            --red: #f87171;
+            --red-soft: rgba(248, 113, 113, 0.12);
+            --yt: #ff4444;
+            --yt-soft: rgba(255, 68, 68, 0.10);
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .noise {
+            position: fixed; inset: 0; opacity: 0.025; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size: 256px;
+        }
+
+        .container { max-width: 780px; margin: 0 auto; padding: 48px 24px 80px; position: relative; z-index: 1; }
+
+        .header { margin-bottom: 48px; }
+        .header-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 100px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 16px; }
+        .header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; background: linear-gradient(135deg, #e4e4ed 0%, #8888a0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header p { color: var(--text-muted); font-size: 15px; max-width: 560px; }
+
+        .section { margin-bottom: 24px; }
+        .section-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+        .num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; }
+        .num-yt { background: var(--yt-soft); color: var(--yt); }
+
+        textarea, .yt-url-input {
+            width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+            color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7;
+            padding: 16px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        }
+        textarea:focus, .yt-url-input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px var(--accent-soft); }
+        textarea::placeholder, .yt-url-input::placeholder { color: var(--text-dim); }
+        #sources { min-height: 120px; }
+        #script { min-height: 280px; }
+
+        /* YT Section */
+        .yt-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 24px; }
+        .yt-section-header { display: flex; align-items: center; justify-content: space-between; }
+        .yt-content { display: none; margin-top: 16px; }
+        .yt-content.active { display: block; }
+
+        .yt-toggle { position: relative; width: 44px; height: 24px; cursor: pointer; }
+        .yt-toggle input { opacity: 0; width: 0; height: 0; }
+        .yt-toggle-track { position: absolute; inset: 0; background: var(--surface-3); border-radius: 100px; border: 1px solid var(--border); transition: all 0.25s; }
+        .yt-toggle-track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-dim); transition: all 0.25s; }
+        .yt-toggle input:checked + .yt-toggle-track { background: var(--yt-soft); border-color: var(--yt); }
+        .yt-toggle input:checked + .yt-toggle-track::after { transform: translateX(20px); background: var(--yt); }
+
+        .yt-url-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .yt-url-input { flex: 1; background: var(--surface-2); padding: 10px 14px; resize: none; }
+        .yt-url-input:focus { border-color: var(--yt); box-shadow: 0 0 0 3px var(--yt-soft); }
+        .btn-yt-add { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.2s; line-height: 1; }
+        .btn-yt-add:hover { background: var(--surface-3); color: var(--text); }
+
+        .yt-urls-list { display: flex; flex-direction: column; gap: 8px; }
+        .yt-chip { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); }
+        .yt-chip .url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .yt-chip .icon { color: var(--yt); font-size: 14px; flex-shrink: 0; }
+        .yt-status { flex-shrink: 0; font-family: 'DM Sans', sans-serif; font-weight: 600; font-size: 11px; padding: 2px 8px; border-radius: 100px; }
+        .s-pending { background: var(--accent-soft); color: var(--accent); }
+        .s-loading { background: var(--orange-soft); color: var(--orange); }
+        .s-done { background: var(--green-soft); color: var(--green); }
+        .s-error { background: var(--red-soft); color: var(--red); }
+        .yt-remove { flex-shrink: 0; background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1; }
+        .yt-remove:hover { color: var(--red); }
+
+        .yt-info { margin-top: 12px; padding: 10px 14px; background: var(--accent-soft); border-radius: 8px; font-size: 12px; color: var(--accent); line-height: 1.5; }
+
+        .accordion { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 8px; }
+        .accordion-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--surface-2); cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-muted); user-select: none; }
+        .accordion-head:hover { background: var(--surface-3); }
+        .accordion-head .arr { transition: transform 0.2s; font-size: 10px; }
+        .accordion-head.open .arr { transform: rotate(90deg); }
+        .accordion-body { display: none; padding: 12px 14px; background: var(--surface); font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.7; color: var(--text-muted); max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+        .accordion-body.open { display: block; }
+
+        /* Buttons */
+        .actions { display: flex; gap: 12px; margin-top: 8px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: var(--accent); color: white; flex: 1; }
+        .btn-primary:hover:not(:disabled) { background: #5558e6; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.3); }
+        .btn-secondary { background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-secondary:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
+
+        /* Loader */
+        .loader { display: none; text-align: center; padding: 48px 0; }
+        .loader.active { display: block; }
+        .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader p { color: var(--text-muted); font-size: 14px; }
+        .loader .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+        /* Error */
+        .error-msg { display: none; padding: 12px 16px; border-radius: var(--radius); background: var(--red-soft); color: var(--red); font-size: 13px; font-weight: 500; margin-bottom: 16px; }
+        .error-msg.active { display: block; }
+
+        /* Results */
+        .results { display: none; margin-top: 32px; animation: fadeUp 0.4s ease; }
+        .results.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .results-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 700; letter-spacing: -1px; margin-bottom: 2px; }
+        .stat-label { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; }
+        .score-high { color: var(--green); }
+        .score-mid { color: var(--orange); }
+        .score-low { color: var(--red); }
+        .report-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+        .report-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+        .verdict { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 100px; font-size: 13px; font-weight: 700; letter-spacing: 0.3px; }
+        .verdict-go { background: var(--green-soft); color: var(--green); }
+        .verdict-warning { background: var(--orange-soft); color: var(--orange); }
+        .verdict-stop { background: var(--red-soft); color: var(--red); }
+        .export-section { margin-top: 16px; display: flex; justify-content: flex-end; }
+
+        @media (max-width: 600px) {
+            .container { padding: 32px 16px 60px; }
+            .header h1 { font-size: 24px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .actions { flex-direction: column; }
+            .yt-url-row { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise"></div>
+    <div class="container">
+        <div class="header">
+            <div class="header-badge">⚡ Finary Content Team</div>
+            <h1>Anti-Plagiat Check</h1>
+            <p>Analyse d'originalité pour les scripts vidéo. Compare ton script à tes sources texte et transcriptions YouTube.</p>
+        </div>
+
+        <!-- YouTube -->
+        <div class="yt-section">
+            <div class="yt-section-header">
+                <div class="section-label"><span class="num num-yt">▶</span> Sources YouTube</div>
+                <label class="yt-toggle"><input type="checkbox" id="ytToggle"><span class="yt-toggle-track"></span></label>
+            </div>
+            <div class="yt-content" id="ytContent">
+                <div class="yt-url-row">
+                    <input type="text" class="yt-url-input" id="ytUrlInput" placeholder="https://www.youtube.com/watch?v=...">
+                    <button class="btn-yt-add" id="ytAddBtn">+</button>
+                </div>
+                <div class="yt-urls-list" id="ytUrlsList"></div>
+                <div class="yt-info">💡 Ajoute les URLs des vidéos dont tu t'es inspiré. Claude récupérera le contenu via web search pour comparer avec ton script.</div>
+                <div id="ytPreviews"></div>
+            </div>
+        </div>
+
+        <!-- Sources texte -->
+        <div class="section">
+            <div class="section-label"><span class="num">1</span> Sources & Références (texte)</div>
+            <textarea id="sources" placeholder="URLs d'articles, citations, documents de référence...&#10;&#10;Ex:&#10;https://example.com/article-source&#10;Rapport COR 2024 - Chapitre 3"></textarea>
+        </div>
+
+        <!-- Script -->
+        <div class="section">
+            <div class="section-label"><span class="num">2</span> Script à vérifier</div>
+            <textarea id="script" placeholder="Colle ici le script complet à analyser...&#10;&#10;Intro, développement, conclusion — tout le contenu."></textarea>
+        </div>
+
+        <div class="error-msg" id="error"></div>
+
+        <div class="actions">
+            <button class="btn btn-primary" id="checkBtn">🔍 Lancer l'analyse</button>
+            <button class="btn btn-secondary" id="clearBtn">Effacer</button>
+        </div>
+
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+            <p id="loaderText">Analyse en cours…</p>
+            <p class="sub" id="loaderSub"></p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="results-header">
+                <span class="results-title">Rapport d'analyse</span>
+                <div id="verdictBadge"></div>
+            </div>
+            <div class="stats-grid" id="statsGrid"></div>
+            <div class="report-card"><div class="report-content" id="reportContent"></div></div>
+            <div class="export-section"><button class="btn btn-secondary" id="exportBtn">📋 Copier en Markdown</button></div>
+        </div>
+    </div>
+
+<script>
+// ─── Config ───
+const API = "/api/claude";
+
+async function callClaude(messages, tools, maxTokens = 4000) {
+    const body = { model: "claude-sonnet-4-20250514", max_tokens: maxTokens, messages };
+    if (tools) body.tools = tools;
+    const res = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || "Erreur API");
+    return data.content.filter(b => b.type === "text").map(b => b.text).join("\n").trim();
+}
+
+// ─── State ───
+let ytEntries = [];
+let currentReport = "";
+
+// ─── DOM ───
+const $ = id => document.getElementById(id);
+const ytToggle = $("ytToggle"), ytContent = $("ytContent"), ytUrlInput = $("ytUrlInput");
+const ytAddBtn = $("ytAddBtn"), ytUrlsList = $("ytUrlsList"), ytPreviews = $("ytPreviews");
+const sourcesEl = $("sources"), scriptEl = $("script"), errorEl = $("error");
+const checkBtn = $("checkBtn"), clearBtn = $("clearBtn"), exportBtn = $("exportBtn");
+const loader = $("loader"), loaderText = $("loaderText"), loaderSub = $("loaderSub");
+const results = $("results"), statsGrid = $("statsGrid"), reportContent = $("reportContent"), verdictBadge = $("verdictBadge");
+
+// ─── YouTube ───
+ytToggle.addEventListener("change", () => ytContent.classList.toggle("active", ytToggle.checked));
+
+function isYtUrl(u) { return /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/.test(u); }
+
+function addYtUrl() {
+    const url = ytUrlInput.value.trim();
+    if (!url) return;
+    if (!isYtUrl(url)) { showError("URL YouTube invalide."); return; }
+    hideError();
+    if (ytEntries.find(e => e.url === url)) return;
+    ytEntries.push({ url, status: "pending", transcript: null });
+    ytUrlInput.value = "";
+    renderYt();
+}
+
+ytAddBtn.addEventListener("click", addYtUrl);
+ytUrlInput.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addYtUrl(); } });
+
+function removeYt(i) { ytEntries.splice(i, 1); renderYt(); renderPreviews(); }
+
+function renderYt() {
+    const sm = { pending: ["En attente","s-pending"], loading: ["Extraction…","s-loading"], done: ["✓ Extrait","s-done"], error: ["Erreur","s-error"] };
+    ytUrlsList.innerHTML = ytEntries.map((e, i) => {
+        const [l, c] = sm[e.status];
+        return `<div class="yt-chip"><span class="icon">▶</span><span class="url">${e.url}</span><span class="yt-status ${c}">${l}</span><button class="yt-remove" onclick="removeYt(${i})">×</button></div>`;
+    }).join("");
+}
+
+function renderPreviews() {
+    const done = ytEntries.filter(e => e.status === "done" && e.transcript);
+    if (!done.length) { ytPreviews.innerHTML = ""; return; }
+    ytPreviews.innerHTML = done.map(e => {
+        const short = e.url.replace(/https?:\/\/(www\.)?/, "").substring(0, 50) + "…";
+        const preview = e.transcript.substring(0, 1500) + (e.transcript.length > 1500 ? "\n\n[…tronqué…]" : "");
+        return `<div class="accordion"><div class="accordion-head" onclick="toggleAcc(this)"><span>📝 ${short}</span><span class="arr">▶</span></div><div class="accordion-body">${preview}</div></div>`;
+    }).join("");
+}
+
+function toggleAcc(el) { el.classList.toggle("open"); el.nextElementSibling.classList.toggle("open"); }
+
+async function fetchYtTranscript(entry) {
+    entry.status = "loading"; renderYt();
+    try {
+        const t = await callClaude([{
+            role: "user",
+            content: `Récupère le contenu/transcription de cette vidéo YouTube : ${entry.url}\n\nCherche la transcription via web search (youtubetranscript.com, kome.ai, etc.).\n\nRetourne UNIQUEMENT le texte brut, sans commentaire. Si pas de transcription exacte, retourne un résumé détaillé.`
+        }], [{ type: "web_search_20250305", name: "web_search" }], 8000);
+        if (t && t.length > 50) { entry.transcript = t; entry.status = "done"; }
+        else entry.status = "error";
+    } catch { entry.status = "error"; }
+    renderYt(); renderPreviews();
+}
+
+// ─── Main ───
+checkBtn.addEventListener("click", async () => {
+    const script = scriptEl.value.trim();
+    if (!script) { showError("Merci de coller un script."); return; }
+    hideError(); results.classList.remove("active"); checkBtn.disabled = true;
+
+    try {
+        // YT transcripts
+        const pending = ytEntries.filter(e => e.status === "pending" || e.status === "error");
+        if (pending.length) {
+            setLoader("Extraction des transcriptions YouTube…", `${pending.length} vidéo(s) — 30-90s par vidéo`);
+            loader.classList.add("active");
+            for (const entry of ytEntries) {
+                if (entry.status === "pending" || entry.status === "error") await fetchYtTranscript(entry);
+            }
+            loader.classList.remove("active");
+        }
+
+        // Build sources
+        const ytSrc = ytEntries.filter(e => e.status === "done" && e.transcript)
+            .map((e, i) => `\n--- TRANSCRIPTION YOUTUBE #${i+1} (${e.url}) ---\n${e.transcript}`).join("\n");
+        const allSrc = [sourcesEl.value.trim(), ytSrc].filter(Boolean).join("\n\n");
+
+        // Analysis
+        setLoader("Analyse anti-plagiat en cours…", "Comparaison avec toutes les sources (20-60s)");
+        loader.classList.add("active");
+
+        const report = await callClaude([{
+            role: "user",
+            content: `Tu es un expert en détection de plagiat pour du contenu éditorial (scripts vidéo YouTube finance/éducation).
+
+Analyse le script ci-dessous et évalue son originalité par rapport aux sources fournies (incluant des transcriptions YouTube) et à tes connaissances générales.
+
+SOURCES ET RÉFÉRENCES UTILISÉES :
+${allSrc || "(Aucune source fournie)"}
+
+SCRIPT À ANALYSER :
+${script}
+
+Réponds avec ce format EXACT :
+
+SCORE D'ORIGINALITÉ : [X]/100
+
+PASSAGES À RISQUE :
+- Pour chaque passage problématique, cite l'extrait exact du script, indique la source potentielle (avec l'URL YouTube si applicable), et le niveau de risque (élevé/moyen/faible)
+- Compare spécifiquement avec les transcriptions YouTube fournies pour détecter les reprises de formulations, structures argumentatives, ou données
+
+POINTS POSITIFS :
+- Liste les éléments originaux du script (angles uniques, données propriétaires, formulations créatives)
+
+RECOMMANDATIONS :
+- Actions concrètes pour améliorer l'originalité si nécessaire
+
+VERDICT : [GO / ATTENTION / NO GO]
+- GO = >80% original, publication possible
+- ATTENTION = 60-80%, modifications recommandées
+- NO GO = <60%, réécriture nécessaire
+
+Sois précis, factuel, et concis. Pas de flatterie inutile.`
+        }]);
+
+        currentReport = report;
+        displayResults(report, script);
+    } catch (err) {
+        showError(`Erreur : ${err.message}`);
+    } finally {
+        loader.classList.remove("active");
+        checkBtn.disabled = false;
+    }
+});
+
+clearBtn.addEventListener("click", () => {
+    sourcesEl.value = ""; scriptEl.value = "";
+    ytEntries = []; renderYt(); renderPreviews();
+    results.classList.remove("active"); hideError();
+});
+
+exportBtn.addEventListener("click", () => {
+    const ytList = ytEntries.filter(e => e.status === "done").map(e => `- ${e.url}`).join("\n");
+    const wc = scriptEl.value.trim().split(/\s+/).length;
+    const md = `# Rapport Anti-Plagiat — Finary\n\n**Date** : ${new Date().toLocaleDateString("fr-FR")}\n**Mots analysés** : ${wc}\n${ytList ? `**Sources YouTube** :\n${ytList}\n` : ""}\n---\n\n${currentReport}`;
+    navigator.clipboard.writeText(md).then(() => {
+        exportBtn.textContent = "✅ Copié !";
+        setTimeout(() => exportBtn.textContent = "📋 Copier en Markdown", 2000);
+    });
+});
+
+function displayResults(report, script) {
+    const sm = report.match(/(\d{1,3})\s*[\/sur]\s*100/);
+    const score = sm ? parseInt(sm[1]) : null;
+    const wc = script.split(/\s+/).length;
+    const ytc = ytEntries.filter(e => e.status === "done").length;
+
+    let vt = "go", vl = "✓ GO";
+    if (score !== null && score < 60) { vt = "stop"; vl = "✕ NO GO"; }
+    else if (score !== null && score < 80) { vt = "warning"; vl = "⚠ ATTENTION"; }
+    if (report.includes("NO GO")) { vt = "stop"; vl = "✕ NO GO"; }
+    else if (report.includes("ATTENTION") && vt === "go") { vt = "warning"; vl = "⚠ ATTENTION"; }
+
+    verdictBadge.innerHTML = `<span class="verdict verdict-${vt}">${vl}</span>`;
+
+    const sc = score >= 80 ? "score-high" : score >= 60 ? "score-mid" : "score-low";
+    statsGrid.innerHTML = `
+        ${score !== null ? `<div class="stat-card"><div class="stat-value ${sc}">${score}%</div><div class="stat-label">Originalité</div></div>` : ""}
+        <div class="stat-card"><div class="stat-value">${wc.toLocaleString("fr-FR")}</div><div class="stat-label">Mots analysés</div></div>
+        <div class="stat-card"><div class="stat-value">${ytc > 0 ? ytc + " YT" : new Date().toLocaleDateString("fr-FR")}</div><div class="stat-label">${ytc > 0 ? "Vidéos comparées" : "Date du check"}</div></div>`;
+
+    reportContent.textContent = report;
+    results.classList.add("active");
+    results.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setLoader(t, s) { loaderText.textContent = t; loaderSub.textContent = s; }
+function showError(m) { errorEl.textContent = m; errorEl.classList.add("active"); }
+function hideError() { errorEl.classList.remove("active"); }
+</script>
+</body>
+</html>
